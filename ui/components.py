@@ -35,7 +35,7 @@ class Sidebar:
             
             st.markdown("<div style='margin: 24px 0; height: 1px; background: rgba(255,255,255,0.2);'></div>", unsafe_allow_html=True)
             
-            st.markdown("<h3 style='font-size: 18px; margin-bottom: 16px; font-weight: 600;'>👥 Active Users</h3>", unsafe_allow_html=True)
+            st.markdown("<h3 style='font-size: 18px; margin-bottom: 16px; font-weight: 600;'>👥 Pengguna Aktif</h3>", unsafe_allow_html=True)
             
             # Load users
             users = User.get_all()
@@ -101,7 +101,7 @@ class ChatArea:
             for msg in messages:
                 self._render_message(msg)
         else:
-            st.info("💬 No messages yet. Start the conversation!")
+            st.info("💬 Belum ada pesan. Mulai percakapan!")
         
         st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
     
@@ -130,7 +130,7 @@ class ChatArea:
             try:
                 decrypted_text = Message.decrypt_text(msg['encrypted_content'], st.session_state.encryption_key)
             except:
-                decrypted_text = "🔒 Cannot decrypt own message"
+                decrypted_text = "🔒 Tidak dapat mendekripsi pesan sendiri"
             
             st.markdown(
                 f"""
@@ -166,7 +166,7 @@ class ChatArea:
                         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
                         border: 1px solid rgba(59, 130, 246, 0.2);
                     '>
-                        <div style='font-size: 14px; line-height: 1.5; margin-bottom: 4px;'>🔒 Encrypted text message</div>
+                        <div style='font-size: 14px; line-height: 1.5; margin-bottom: 4px;'>🔒 Pesan teks terenkripsi</div>
                         <div style='font-size: 11px; color: #94a3b8; text-align: left;'>{time_str}</div>
                     </div>
                 </div>
@@ -175,23 +175,23 @@ class ChatArea:
             )
             
             # Form untuk decrypt text message
-            with st.expander("🔓 Decrypt Message", expanded=False):
+            with st.expander("🔓 Dekripsi Pesan", expanded=False):
                 decrypt_key = st.text_input(
-                    "🔑 Encryption Key",
+                    "🔑 Kunci Enkripsi",
                     type="password",
                     key=f"decrypt_key_text_{msg['id']}",
-                    placeholder="Enter the encryption key"
+                    placeholder="Masukkan kunci enkripsi"
                 )
                 
-                if st.button(f"Decrypt", key=f"decrypt_btn_text_{msg['id']}"):
+                if st.button(f"Dekripsi", key=f"decrypt_btn_text_{msg['id']}"):
                     if decrypt_key and decrypt_key.strip():
                         try:
                             decrypted_text = Message.decrypt_text(msg['encrypted_content'], decrypt_key)
-                            st.success(f"✅ Message: **{decrypted_text}**")
+                            st.success(f"✅ Pesan: **{decrypted_text}**")
                         except Exception as e:
-                            st.error(f"❌ Wrong encryption key: {str(e)}")
+                            st.error(f"❌ Kunci enkripsi salah: {str(e)}")
                     else:
-                        st.warning("⚠️ Please enter the encryption key!")
+                        st.warning("⚠️ Harap masukkan kunci enkripsi!")
     
     def _render_image_message(self, msg, is_sent, time_str):
         if is_sent:
@@ -206,7 +206,7 @@ class ChatArea:
                         border-bottom-right-radius: 4px;
                         box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
                     '>
-                        <div style='font-size: 13px; font-weight: 600;'>🖼️ Image with hidden message</div>
+                        <div style='font-size: 13px; font-weight: 600;'>🖼️ Gambar dengan pesan tersembunyi</div>
                         <div style='font-size: 11px; opacity: 0.8; margin-top: 2px;'>{time_str}</div>
                     </div>
                 </div>
@@ -220,7 +220,7 @@ class ChatArea:
                 with col2:
                     st.image(image_data)
             except Exception as e:
-                st.error(f"Error displaying image: {str(e)}")
+                st.error(f"Error menampilkan gambar: {str(e)}")
         else:
             st.markdown(
                 f"""
@@ -234,7 +234,7 @@ class ChatArea:
                         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
                         border: 1px solid rgba(148, 163, 184, 0.2);
                     '>
-                        <div style='font-size: 13px; font-weight: 600;'>🖼️ Image with hidden message</div>
+                        <div style='font-size: 13px; font-weight: 600;'>🖼️ Gambar dengan pesan tersembunyi</div>
                         <div style='font-size: 11px; opacity: 0.7; margin-top: 2px;'>{time_str}</div>
                     </div>
                 </div>
@@ -249,25 +249,25 @@ class ChatArea:
                     st.image(image_data)
                     
                     # Form untuk ekstrak pesan tersembunyi
-                    with st.expander("🔓 Extract Hidden Message", expanded=False):
+                    with st.expander("🔓 Ekstrak Pesan Tersembunyi", expanded=False):
                         decrypt_key = st.text_input(
-                            "🔑 Encryption Key",
+                            "🔑 Kunci Enkripsi",
                             type="password",
                             key=f"decrypt_key_img_{msg['id']}",
-                            placeholder="Enter the encryption key"
+                            placeholder="Masukkan kunci enkripsi"
                         )
                         
-                        if st.button(f"Extract Message", key=f"extract_btn_{msg['id']}"):
+                        if st.button(f"Ekstrak Pesan", key=f"extract_btn_{msg['id']}"):
                             if decrypt_key and decrypt_key.strip():
                                 try:
                                     hidden_message = Message.extract_from_image(image_data, decrypt_key)
-                                    st.success(f"✅ Hidden message: **{hidden_message}**")
+                                    st.success(f"✅ Pesan tersembunyi: **{hidden_message}**")
                                 except Exception as e:
-                                    st.error(f"❌ Wrong encryption key or extraction failed: {str(e)}")
+                                    st.error(f"❌ Kunci enkripsi salah atau ekstraksi gagal: {str(e)}")
                             else:
-                                st.warning("⚠️ Please enter the encryption key!")
+                                st.warning("⚠️ Harap masukkan kunci enkripsi!")
             except Exception as e:
-                st.error(f"Error displaying image: {str(e)}")
+                st.error(f"Error menampilkan gambar: {str(e)}")
     
     def _render_file_message(self, msg, is_sent, time_str):
         try:
@@ -317,15 +317,15 @@ class ChatArea:
                 )
                 
                 # AES-GCM Decryption
-                with st.expander("🔓 Decrypt & Download File", expanded=False):
+                with st.expander("🔓 Dekripsi & Unduh File", expanded=False):
                     decrypt_key = st.text_input(
-                        "🔑 Encryption Key",
+                        "🔑 Kunci Enkripsi",
                         type="password",
                         key=f"decrypt_key_file_{msg['id']}",
-                        placeholder="Enter the encryption key"
+                        placeholder="Masukkan kunci enkripsi"
                     )
                     
-                    if st.button(f"Decrypt & Download", key=f"decrypt_btn_file_{msg['id']}"):
+                    if st.button(f"Dekripsi & Unduh", key=f"decrypt_btn_file_{msg['id']}"):
                         if decrypt_key and decrypt_key.strip():
                             try:
                                 from services.crypto_service import decrypt_file_aes_gcm
@@ -337,24 +337,24 @@ class ChatArea:
                                 )
                                 
                                 st.download_button(
-                                    label=f"💾 Save {filename}",
+                                    label=f"💾 Simpan {filename}",
                                     data=decrypted_file,
                                     file_name=filename,
                                     mime="application/octet-stream",
                                     key=f"save_{msg['id']}"
                                 )
-                                st.success(f"✅ File decrypted successfully!")
+                                st.success(f"✅ File berhasil didekripsi!")
                             except Exception as e:
-                                st.error(f"❌ Wrong encryption key or corrupted file: {str(e)}")
+                                st.error(f"❌ Kunci enkripsi salah atau file rusak: {str(e)}")
                         else:
-                            st.warning("⚠️ Please enter the encryption key!")
+                            st.warning("⚠️ Harap masukkan kunci enkripsi!")
         except Exception as e:
-            st.error(f"Error processing file: {str(e)}")
+            st.error(f"Error memproses file: {str(e)}")
 
 
 class MessageInput:
     def render(self):
-        tab1, tab2, tab3 = st.tabs(["✉️ Text Message", "🖼️ Image + Steganography", "📎 File"])
+        tab1, tab2, tab3 = st.tabs(["✉️ Pesan Teks", "🖼️ Gambar + Steganografi", "📎 File"])
         
         with tab1:
             self._render_text_tab()
@@ -367,31 +367,31 @@ class MessageInput:
     
     def _render_text_tab(self):
         with st.form("text_form", clear_on_submit=True):
-            st.markdown("<label style='color: #94a3b8; font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block;'>🔑 Encryption Key</label>", unsafe_allow_html=True)
+            st.markdown("<label style='color: #94a3b8; font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block;'>🔑 Kunci Enkripsi</label>", unsafe_allow_html=True)
             encryption_key = st.text_input(
-                "Encryption Key",
+                "Kunci Enkripsi Teks",
                 value=st.session_state.encryption_key,
                 type="password",
-                placeholder="Enter encryption key...",
+                placeholder="Masukkan kunci enkripsi...",
                 label_visibility="collapsed"
             )
             
             st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
-            st.markdown("<label style='color: #94a3b8; font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block;'>💬 Message</label>", unsafe_allow_html=True)
+            st.markdown("<label style='color: #94a3b8; font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block;'>💬 Pesan</label>", unsafe_allow_html=True)
             message = st.text_area(
-                "Message",
-                placeholder="Type your message here...",
+                "Pesan",
+                placeholder="Ketik pesan Anda di sini...",
                 height=100,
                 label_visibility="collapsed"
             )
 
-            if st.form_submit_button("Send Encrypted Message 🔒", use_container_width=True, type="primary"):
+            if st.form_submit_button("Kirim Pesan Terenkripsi 🔒", use_container_width=True, type="primary"):
                 if not encryption_key or not encryption_key.strip():
-                    st.error("❌ Please enter encryption key!")
+                    st.error("❌ Harap masukkan kunci enkripsi!")
                 elif not message or not message.strip():
-                    st.error("❌ Please enter a message!")
+                    st.error("❌ Harap masukkan pesan!")
                 else:
-                    with st.spinner("Sending..."):
+                    with st.spinner("Mengirim..."):
                         st.session_state.encryption_key = encryption_key
                         success, result = Message.send_text(
                             st.session_state.user['id'],
@@ -408,38 +408,38 @@ class MessageInput:
     
     def _render_image_tab(self):
         with st.form("image_form", clear_on_submit=True):
-            st.markdown("<label style='color: #94a3b8; font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block;'>🔑 Encryption Key</label>", unsafe_allow_html=True)
+            st.markdown("<label style='color: #94a3b8; font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block;'>🔑 Kunci Enkripsi</label>", unsafe_allow_html=True)
             encryption_key = st.text_input(
-                "Encryption Key Image",
+                "Kunci Enkripsi Gambar",
                 value=st.session_state.encryption_key,
                 type="password",
-                placeholder="Enter encryption key...",
+                placeholder="Masukkan kunci enkripsi...",
                 label_visibility="collapsed",
                 key="image_encryption_key"
             )
             
             st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
-            st.markdown("<label style='color: #94a3b8; font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block;'>🖼️ Upload Image</label>", unsafe_allow_html=True)
-            uploaded_image = st.file_uploader("Choose an image", type=['png', 'jpg', 'jpeg'], label_visibility="collapsed")
+            st.markdown("<label style='color: #94a3b8; font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block;'>🖼️ Unggah Gambar</label>", unsafe_allow_html=True)
+            uploaded_image = st.file_uploader("Pilih gambar", type=['png', 'jpg', 'jpeg'], label_visibility="collapsed")
             
             st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
-            st.markdown("<label style='color: #94a3b8; font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block;'>🔒 Secret Message</label>", unsafe_allow_html=True)
+            st.markdown("<label style='color: #94a3b8; font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block;'>🔒 Pesan Rahasia</label>", unsafe_allow_html=True)
             secret_message = st.text_area(
-                "Secret Message",
-                placeholder="Enter secret message to hide in image...",
+                "Pesan Rahasia",
+                placeholder="Masukkan pesan rahasia untuk disembunyikan dalam gambar...",
                 height=80,
                 label_visibility="collapsed"
             )
             
-            if st.form_submit_button("Send Image with Hidden Message 🔒", use_container_width=True, type="primary"):
+            if st.form_submit_button("Kirim Gambar dengan Pesan Tersembunyi 🔒", use_container_width=True, type="primary"):
                 if not encryption_key or not encryption_key.strip():
-                    st.error("❌ Please enter encryption key!")
+                    st.error("❌ Harap masukkan kunci enkripsi!")
                 elif not uploaded_image:
-                    st.error("❌ Please upload an image!")
+                    st.error("❌ Harap unggah gambar!")
                 elif not secret_message or not secret_message.strip():
-                    st.error("❌ Please enter a secret message!")
+                    st.error("❌ Harap masukkan pesan rahasia!")
                 else:
-                    with st.spinner("Hiding message and sending..."):
+                    with st.spinner("Menyembunyikan pesan dan mengirim..."):
                         st.session_state.encryption_key = encryption_key
                         success, result = Message.send_image_steganography(
                             st.session_state.user['id'],
@@ -457,30 +457,30 @@ class MessageInput:
     
     def _render_file_tab(self):
         with st.form("file_form", clear_on_submit=True):
-            st.markdown("<label style='color: #94a3b8; font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block;'>🔑 Encryption Key</label>", unsafe_allow_html=True)
+            st.markdown("<label style='color: #94a3b8; font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block;'>🔑 Kunci Enkripsi</label>", unsafe_allow_html=True)
             encryption_key = st.text_input(
-                "Encryption Key File",
+                "Kunci Enkripsi File",
                 value=st.session_state.encryption_key,
                 type="password",
-                placeholder="Enter encryption key...",
+                placeholder="Masukkan kunci enkripsi...",
                 label_visibility="collapsed",
                 key="file_encryption_key"
             )
             
-            st.markdown("<label style='color: #94a3b8; font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block; margin-top: 12px;'>📎 Upload File</label>", unsafe_allow_html=True)
+            st.markdown("<label style='color: #94a3b8; font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block; margin-top: 12px;'>📎 Unggah File</label>", unsafe_allow_html=True)
             
-            uploaded_file = st.file_uploader("Choose a file", label_visibility="collapsed", key="file_upload")
+            uploaded_file = st.file_uploader("Pilih file", label_visibility="collapsed", key="file_upload")
             
             if uploaded_file:
-                st.info(f"📎 Selected: {uploaded_file.name} ({uploaded_file.size / 1024:.1f} KB)")
+                st.info(f"📎 Terpilih: {uploaded_file.name} ({uploaded_file.size / 1024:.1f} KB)")
             
-            if st.form_submit_button("Send Encrypted File 🔒", use_container_width=True, type="primary"):
+            if st.form_submit_button("Kirim File Terenkripsi 🔒", use_container_width=True, type="primary"):
                 if not uploaded_file:
-                    st.error("❌ Please upload a file!")
+                    st.error("❌ Harap unggah file!")
                 elif not encryption_key or not encryption_key.strip():
-                    st.error("❌ Please enter an encryption key!")
+                    st.error("❌ Harap masukkan kunci enkripsi!")
                 else:
-                    with st.spinner("Encrypting and sending file..."):
+                    with st.spinner("Mengenkripsi dan mengirim file..."):
                         success, result = Message.send_file(
                             st.session_state.user['id'],
                             st.session_state.selected_user['id'],

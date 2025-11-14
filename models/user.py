@@ -15,10 +15,10 @@ class User:
         try:
             # Validasi input
             if not all([email, username, password]):
-                raise ValueError('All fields are required')
+                raise ValueError('Semua field harus diisi')
             
             if len(password) < 6:
-                raise ValueError('Password must be at least 6 characters')
+                raise ValueError('Password harus minimal 6 karakter')
             
             # Check apakah email sudah terdaftar
             email_hmac_check = generate_hmac(email)

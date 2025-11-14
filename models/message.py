@@ -30,7 +30,7 @@ class Message:
             if not response.data:
                 raise Exception('Gagal mengirim pesan')
             
-            return True, "Pesan berhasil dikirim"
+            return True, "Pesan teks berhasil dikirim"
             
         except Exception as e:
             return False, f"Error: {str(e)}"
@@ -59,7 +59,7 @@ class Message:
             
             response = db.from_('messages').insert(message_data).execute()
             
-            return True, "Image with hidden message sent successfully"
+            return True, "Pesan gambar dengan pesan tersembunyi berhasil dikirim"
             
         except Exception as e:
             return False, f"Error sending image: {str(e)}"
@@ -93,7 +93,7 @@ class Message:
             
             response = db.from_('messages').insert(message_data).execute()
             
-            return True, "✓ File encrypted with AES-256-GCM"
+            return True, "Pesan file berhasil dikirim"
             
         except Exception as e:
             return False, f"Error sending file: {str(e)}"

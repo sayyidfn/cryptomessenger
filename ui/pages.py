@@ -25,8 +25,8 @@ class LoginPage:
             
             # Login Form
             with st.form("login_form"):
-                email = st.text_input("📧 Email", placeholder="Enter your email")
-                password = st.text_input("🔒 Password", type="password", placeholder="Enter your password")
+                email = st.text_input("📧 Email", placeholder="Masukkan email Anda")
+                password = st.text_input("🔒 Password", type="password", placeholder="Masukkan password Anda")
                 
                 col_btn1, col_btn2 = st.columns(2)
                 
@@ -39,7 +39,7 @@ class LoginPage:
                     if not email or not password:
                         st.error("✕ Email dan password harus diisi!")
                     else:
-                        with st.spinner("Logging in..."):
+                        with st.spinner("Sedang masuk..."):
                             success, result = User.login(email, password)
                             
                             if success:
@@ -74,10 +74,10 @@ class RegisterPage:
             
             # Register Form
             with st.form("register_form"):
-                username = st.text_input("👤 Username", placeholder="Choose a username")
-                email = st.text_input("📧 Email", placeholder="Enter your email")
-                password = st.text_input("🔒 Password", type="password", placeholder="Create a strong password")
-                confirm_password = st.text_input("🔒 Confirm Password", type="password", placeholder="Confirm your password")
+                username = st.text_input("👤 Username", placeholder="Masukkan username Anda")
+                email = st.text_input("📧 Email", placeholder="Masukkan email Anda")
+                password = st.text_input("🔒 Password", type="password", placeholder="Buat password yang kuat")
+                confirm_password = st.text_input("🔒 Confirm Password", type="password", placeholder="Konfirmasi password Anda")
                 
                 col_btn1, col_btn2 = st.columns(2)
                 
@@ -135,7 +135,7 @@ class ChatPage:
             st.markdown("""
                 <div style='text-align: center; padding: 60px 20px;'>
                     <div style='font-size: 80px; margin-bottom: 20px; opacity: 0.3;'>💬</div>
-                    <h2 style='color: #f1f5f9; font-size: 28px; margin-bottom: 12px; font-weight: 700;'>Select a User to Start Chatting</h2>
-                    <p style='color: #94a3b8; font-size: 16px;'>Choose a user from the sidebar to begin a secure conversation</p>
+                    <h2 style='color: #f1f5f9; font-size: 28px; margin-bottom: 12px; font-weight: 700;'>Pilih Pengguna untuk Memulai Chat</h2>
+                    <p style='color: #94a3b8; font-size: 16px;'>Pilih pengguna dari sidebar untuk memulai percakapan yang aman</p>
                 </div>
             """, unsafe_allow_html=True)

@@ -31,7 +31,7 @@ def _bytes_equal(a: bytes, b: bytes) -> bool:
 
 def generate_hmac(data: str) -> str:
     if not data:
-        raise ValueError('Data cannot be empty')
+        raise ValueError('Data tidak boleh kosong')
 
     mac = hmac.new(
         _HMAC_KEY,
@@ -53,7 +53,7 @@ def verify_hmac(data: str, hmac_value: str) -> bool:
 
 def hash_password_bcrypt(password: str) -> str:
     if not password or len(password) < 6:
-        raise ValueError('Password must be at least 6 characters')
+        raise ValueError('Password harus minimal 6 karakter')
 
     # Bcrypt dengan cost factor 12 (2^12 iterations)
     hashed = bcrypt.hashpw(
@@ -119,7 +119,7 @@ def decrypt_field(encrypted_b64: str, hmac_value: str) -> str:
     combined = base64.b64decode(encrypted_b64)
 
     if len(combined) < 12 + 16:
-        raise ValueError('Invalid encrypted data format')
+        raise ValueError('Format data terenkripsi tidak valid')
 
     # Extract nonce dan ciphertext+tag
     nonce = combined[:12]
@@ -136,7 +136,7 @@ def decrypt_field(encrypted_b64: str, hmac_value: str) -> str:
 
 def encrypt_for_database(data: str) -> Dict[str, str]:
     if not data:
-        raise ValueError('Data cannot be empty')
+        raise ValueError('Data tidak boleh kosong')
 
     # Generate 256-bit key
     key = _sha256_bytes(_DATABASE_MASTER_KEY)
@@ -166,12 +166,11 @@ def encrypt_for_database(data: str) -> Dict[str, str]:
 
 def decrypt_from_database(encrypted_b64: str, hmac_value: str) -> str:
     if not encrypted_b64 or not hmac_value:
-        raise ValueError('Encrypted data and HMAC cannot be empty')
+        raise ValueError('Data terenkripsi dan HMAC tidak boleh kosong')
 
     # Verify HMAC first
     if not verify_hmac(encrypted_b64, hmac_value):
-        raise Exception('HMAC verification failed - data may be tampered')
-
+        raise Exception('Verifikasi HMAC gagal - data mungkin telah diubah')
     # Generate key
     key = _sha256_bytes(_DATABASE_MASTER_KEY)
     aesgcm = AESGCM(key)
@@ -180,7 +179,7 @@ def decrypt_from_database(encrypted_b64: str, hmac_value: str) -> str:
     combined = base64.b64decode(encrypted_b64)
 
     if len(combined) < 12:
-        raise ValueError('Invalid encrypted data')
+        raise ValueError('Data terenkripsi tidak valid')
 
     # Extract nonce dan ciphertext+tag
     nonce = combined[:12]
@@ -197,9 +196,9 @@ def decrypt_from_database(encrypted_b64: str, hmac_value: str) -> str:
 
 def encrypt_text_aes_ctr_hmac(plain_text: str, user_key: str) -> str:
     if not plain_text:
-        raise ValueError('Plaintext cannot be empty')
+        raise ValueError('Plaintext tidak boleh kosong')
     if not user_key:
-        raise ValueError('Encryption key cannot be empty')
+        raise ValueError('Kunci enkripsi tidak boleh kosong')
 
     # Generate key dari user key (SHA-256 = 32 bytes untuk AES-256)
     key = _sha256_bytes(user_key)
@@ -230,20 +229,20 @@ def encrypt_text_aes_ctr_hmac(plain_text: str, user_key: str) -> str:
 
 def decrypt_text_aes_ctr_hmac(encrypted_text: str, user_key: str) -> str:
     if not encrypted_text:
-        raise ValueError('Encrypted text cannot be empty')
+        raise ValueError('Teks terenkripsi tidak boleh kosong')
     if not user_key:
-        raise ValueError('Decryption key cannot be empty')
+        raise ValueError('Kunci dekripsi tidak boleh kosong')
 
     # Split encrypted dan HMAC
     parts = encrypted_text.split('|')
     if len(parts) != 2:
-        raise ValueError('Invalid encrypted text format')
+        raise ValueError('Format teks terenkripsi tidak valid')
 
     encrypted_b64, hmac_value = parts
 
     # Verify HMAC first
     if not verify_hmac(encrypted_b64, hmac_value):
-        raise Exception('HMAC verification failed - data may be tampered')
+        raise Exception('Verifikasi HMAC gagal - data mungkin telah diubah')
 
     # Generate key
     key = _sha256_bytes(user_key)
@@ -252,7 +251,7 @@ def decrypt_text_aes_ctr_hmac(encrypted_text: str, user_key: str) -> str:
     combined = base64.b64decode(encrypted_b64)
 
     if len(combined) < 16:
-        raise ValueError('Invalid encrypted data')
+        raise ValueError('Data terenkripsi tidak valid')
 
     # Extract IV dan ciphertext
     iv = combined[:16]
@@ -325,7 +324,7 @@ def decrypt_3des(encrypted_data: str, encryption_key: str) -> str:
     expected_hmac = h.digest()
     
     if not _bytes_equal(hmac_tag, expected_hmac):
-        raise ValueError("3DES integrity check failed - wrong key or corrupted data")
+        raise ValueError("Pemeriksaan integritas 3DES gagal - kunci salah atau data rusak")
     
     # Decrypt
     cipher = Cipher(
@@ -359,7 +358,7 @@ def generate_random_key(length: int) -> str:
 
 if __name__ == '__main__':
     # Test encrypt/decrypt field
-    print("Testing Field Encryption (ChaCha20-Poly1305)...")
+    print("Testing bagian Enkripsi (ChaCha20-Poly1305)...")
     test_email = "test@example.com"
     encrypted = encrypt_field(test_email)
     print(f"Encrypted: {encrypted['encrypted'][:50]}...")
@@ -367,8 +366,8 @@ if __name__ == '__main__':
 
     decrypted = decrypt_field(encrypted['encrypted'], encrypted['hmac'])
     print(f"Decrypted: {decrypted}")
-    assert decrypted == test_email, "Field encryption test failed!"
-    print("✅ Field encryption OK\n")
+    assert decrypted == test_email, "Tes enkripsi field gagal!"
+    print("✅ Field enkripsi OK\n")
 
     # Test bcrypt
     print("Testing Bcrypt Password Hashing...")
@@ -378,11 +377,11 @@ if __name__ == '__main__':
 
     is_valid = verify_password_bcrypt(password, hashed)
     print(f"Verification: {is_valid}")
-    assert is_valid, "Bcrypt test failed!"
+    assert is_valid, "Bcrypt tes gagal!"
     print("✅ Bcrypt OK\n")
 
     # Test text message encryption
-    print("Testing Text Message Encryption (AES-CTR-HMAC)...")
+    print("Testing bagian Enkripsi Pesan Teks (AES-CTR-HMAC)...")
     message = "Hello, this is a secret message!"
     user_key = "MyEncryptionKey123"
     encrypted_msg = encrypt_text_aes_ctr_hmac(message, user_key)
@@ -390,10 +389,10 @@ if __name__ == '__main__':
 
     decrypted_msg = decrypt_text_aes_ctr_hmac(encrypted_msg, user_key)
     print(f"Decrypted: {decrypted_msg}")
-    assert decrypted_msg == message, "Text encryption test failed!"
-    print("✅ Text message encryption OK\n")
+    assert decrypted_msg == message, "Tes enkripsi pesan teks gagal!"
+    print("✅ Enkripsi pesan teks OK\n")
 
-    print("All tests passed! ✅")
+    print("Semua tes berhasil! ✅")
 
 
 # ============================================================================
@@ -422,7 +421,7 @@ def hide_message_in_image(image_bytes: bytes, message: str, encryption_key: str)
     
     # Cek apakah gambar cukup besar untuk menyimpan pesan
     if len(binary_message) > len(pixels) * 3:
-        raise ValueError("Image too small to hide message")
+        raise ValueError("Gambar terlalu kecil untuk menyembunyikan pesan")
     
     # Hide message in LSB
     new_pixels = []
@@ -495,9 +494,9 @@ def extract_message_from_image(image_bytes: bytes, encryption_key: str) -> str:
                     decrypted_message = decrypt_3des(encrypted_message, encryption_key)
                     return decrypted_message
                 except Exception as e:
-                    raise ValueError(f"Failed to decrypt message: {str(e)}")
+                    raise ValueError(f"Gagal mendekripsi pesan: {str(e)}")
     
-    raise ValueError("No hidden message found or wrong encryption key")
+    raise ValueError("Tidak ditemukan pesan tersembunyi atau kunci enkripsi salah")
 
 
 # ============================================================================
