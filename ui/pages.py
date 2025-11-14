@@ -94,7 +94,7 @@ class RegisterPage:
                     elif len(password) < 6:
                         st.error("✕ Password minimal 6 karakter!")
                     else:
-                        with st.spinner("Creating account..."):
+                        with st.spinner("Mendaftarkan akun..."):
                             success, result = User.register(email, username, password)
                             
                             if success:
