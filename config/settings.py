@@ -1,22 +1,20 @@
 import os
 from dotenv import load_dotenv
-import streamlit as st
 
 # Load environment variables
 load_dotenv()
 
 class Settings:
-    """Konfigurasi aplikasi"""
-    
     # Supabase Configuration - Support Streamlit Cloud Secrets
-    if hasattr(st, 'secrets') and 'SUPABASE_URL' in st.secrets:
-        # Running on Streamlit Cloud
+    try:
+        import streamlit as st
+        # Try to access secrets (only works on Streamlit Cloud)
         SUPABASE_URL = st.secrets['SUPABASE_URL']
         SUPABASE_KEY = st.secrets['SUPABASE_KEY']
         DATABASE_MASTER_KEY = st.secrets['DATABASE_MASTER_KEY']
         HMAC_SECRET_KEY = st.secrets['HMAC_SECRET_KEY']
-    else:
-        # Running locally
+    except (FileNotFoundError, KeyError):
+        # Running locally - use .env file
         SUPABASE_URL = os.getenv('SUPABASE_URL')
         SUPABASE_KEY = os.getenv('SUPABASE_KEY')
         DATABASE_MASTER_KEY = os.getenv('DATABASE_MASTER_KEY')

@@ -9,12 +9,11 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives import serialization, hashes
 import bcrypt
+from config.settings import Settings
 
-# HMAC secret key (dari crypto_helper.dart)
-_HMAC_KEY = b'HMAC_SECRET_KEY_2025_CRYPTO_APP'
-
-# Database master key (dari crypto_helper.dart)
-_DATABASE_MASTER_KEY = 'DATABASE_MASTER_KEY_2025_SECURE_CRYPTO_APP_V1'
+# Load keys from environment variables
+_HMAC_KEY = Settings.HMAC_SECRET_KEY.encode('utf-8')
+_DATABASE_MASTER_KEY = Settings.DATABASE_MASTER_KEY
     
 # ============================================================================
 # UTILITY FUNCTIONS
