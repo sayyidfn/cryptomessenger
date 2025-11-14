@@ -1,10 +1,31 @@
 import streamlit as st
 import base64
 import json
+import hashlib
 from datetime import datetime
 from models.user import User
 from models.message import Message
 
+# Initialize cache in session state
+if 'decrypted_cache' not in st.session_state:
+    st.session_state.decrypted_cache = {}
+
+def get_cached_decrypt(message_id: str, encrypted_content: str, encrypted_hmac: str, key: str, decrypt_function) -> any:
+    # Generate unique cache key
+    key_hash = hashlib.md5(key.encode()).hexdigest()
+    cache_key = f"{message_id}_{key_hash}"
+    
+    # Check cache
+    if cache_key in st.session_state.decrypted_cache:
+        return st.session_state.decrypted_cache[cache_key]
+    
+    # Decrypt pertama kali (cache miss)
+    try:
+        decrypted = decrypt_function(encrypted_content, encrypted_hmac, key)
+        st.session_state.decrypted_cache[cache_key] = decrypted
+        return decrypted
+    except Exception as e:
+        raise e
 
 class Sidebar:
     def render(self):
@@ -128,9 +149,19 @@ class ChatArea:
         if is_sent:
             # Pengirim: tampilkan plaintext
             try:
-                decrypted_text = Message.decrypt_text(msg['encrypted_content'], st.session_state.encryption_key)
-            except:
-                decrypted_text = "🔒 Tidak dapat mendekripsi pesan sendiri"
+                # Cek apakah encryption_key tersedia
+                if st.session_state.encryption_key:
+                    decrypted_text = get_cached_decrypt(
+                        msg['id'],
+                        msg['encrypted_content'],
+                        msg.get('encrypted_hmac', ''),
+                        st.session_state.encryption_key,
+                        Message.decrypt_text
+                    )
+                else:
+                    decrypted_text = "🔒 [Kunci enkripsi tidak tersimpan]"
+            except Exception as e:
+                decrypted_text = f"🔒 [Error: {str(e)}]"
             
             st.markdown(
                 f"""
@@ -186,7 +217,13 @@ class ChatArea:
                 if st.button(f"Dekripsi", key=f"decrypt_btn_text_{msg['id']}"):
                     if decrypt_key and decrypt_key.strip():
                         try:
-                            decrypted_text = Message.decrypt_text(msg['encrypted_content'], decrypt_key)
+                            decrypted_text = get_cached_decrypt(
+                                msg['id'],
+                                msg['encrypted_content'],
+                                msg.get('encrypted_hmac', ''),
+                                decrypt_key,
+                                Message.decrypt_text
+                            )
                             st.success(f"✅ Pesan: **{decrypted_text}**")
                         except Exception as e:
                             st.error(f"❌ Kunci enkripsi salah: {str(e)}")
@@ -215,7 +252,10 @@ class ChatArea:
             )
             # Show image aligned right using columns
             try:
-                image_data = base64.b64decode(msg['encrypted_content'])
+                from services.crypto_service import decrypt_from_database
+                # Decrypt ChaCha20 layer first untuk display image
+                image_base64 = decrypt_from_database(msg['encrypted_content'], msg.get('encrypted_hmac', ''))
+                image_data = base64.b64decode(image_base64)
                 col1, col2 = st.columns([2, 1])
                 with col2:
                     st.image(image_data)
@@ -243,7 +283,10 @@ class ChatArea:
             )
             # Show image aligned left with decrypt form
             try:
-                image_data = base64.b64decode(msg['encrypted_content'])
+                from services.crypto_service import decrypt_from_database
+                # Decrypt ChaCha20 layer first untuk display image
+                image_base64 = decrypt_from_database(msg['encrypted_content'], msg.get('encrypted_hmac', ''))
+                image_data = base64.b64decode(image_base64)
                 col1, col2 = st.columns([1, 2])
                 with col1:
                     st.image(image_data)
@@ -260,7 +303,13 @@ class ChatArea:
                         if st.button(f"Ekstrak Pesan", key=f"extract_btn_{msg['id']}"):
                             if decrypt_key and decrypt_key.strip():
                                 try:
-                                    hidden_message = Message.extract_from_image(image_data, decrypt_key)
+                                    hidden_message = get_cached_decrypt(
+                                        msg['id'],
+                                        msg['encrypted_content'],
+                                        msg.get('encrypted_hmac', ''),
+                                        decrypt_key,
+                                        lambda enc, hmac, key: Message.extract_from_image(enc, hmac, key)
+                                    )
                                     st.success(f"✅ Pesan tersembunyi: **{hidden_message}**")
                                 except Exception as e:
                                     st.error(f"❌ Kunci enkripsi salah atau ekstraksi gagal: {str(e)}")
@@ -271,7 +320,10 @@ class ChatArea:
     
     def _render_file_message(self, msg, is_sent, time_str):
         try:
-            file_data = json.loads(msg['encrypted_content'])
+            from services.crypto_service import decrypt_from_database
+            # Decrypt ChaCha20 layer to get file JSON
+            file_json = decrypt_from_database(msg['encrypted_content'], msg.get('encrypted_hmac', ''))
+            file_data = json.loads(file_json)
             filename = file_data['filename']
             
             if is_sent:
@@ -286,8 +338,10 @@ class ChatArea:
                             border-bottom-right-radius: 4px;
                             max-width: 400px;
                             box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+                            word-wrap: break-word;
+                            overflow-wrap: break-word;
                         '>
-                            <div style='font-size: 13px; margin-bottom: 4px; font-weight: 600;'>📎 {filename}</div>
+                            <div style='font-size: 13px; margin-bottom: 4px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'>📎 {filename}</div>
                             <div style='font-size: 11px; opacity: 0.8;'>{time_str}</div>
                         </div>
                     </div>
@@ -307,14 +361,26 @@ class ChatArea:
                             max-width: 400px;
                             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
                             border: 1px solid rgba(148, 163, 184, 0.2);
+                            word-wrap: break-word;
+                            overflow-wrap: break-word;
                         '>
-                            <div style='font-size: 13px; margin-bottom: 4px; font-weight: 600;'>📎 {filename}</div>
+                            <div style='font-size: 13px; margin-bottom: 4px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'>📎 {filename}</div>
                             <div style='font-size: 11px; opacity: 0.7;'>{time_str}</div>
                         </div>
                     </div>
                     """, 
                     unsafe_allow_html=True
                 )
+                # Tombol download file terenkripsi
+                with st.expander("📥 Unduh File Terenkripsi", expanded=False):
+                    st.warning("⚠️ File masih dalam bentuk terenkripsi. Gunakan kunci enkripsi untuk mendekripsi dan mengunduh file asli")
+                    st.download_button(
+                        label="📥 Download file terenkripsi",
+                        data=file_data['encrypted_content'],
+                        file_name=f"{filename}.encrypted", 
+                        mime="application/octet-stream",
+                        key=f"download_encrypted_{msg['id']}"
+                    )
                 
                 # AES-GCM Decryption
                 with st.expander("🔓 Dekripsi & Unduh File", expanded=False):
@@ -328,12 +394,22 @@ class ChatArea:
                     if st.button(f"Dekripsi & Unduh", key=f"decrypt_btn_file_{msg['id']}"):
                         if decrypt_key and decrypt_key.strip():
                             try:
-                                from services.crypto_service import decrypt_file_aes_gcm
+                                from services.crypto_service import decrypt_file_aes_gcm, decrypt_from_database
                                 
-                                # Decrypt file dengan AES-GCM
-                                decrypted_file = decrypt_file_aes_gcm(
-                                    file_data['encrypted_content'],
-                                    decrypt_key
+                                # Decrypt dengan caching (double decryption: ChaCha20 + AES-GCM)
+                                def decrypt_file_double(encrypted_content, encrypted_hmac, key):
+                                    # Layer 1: Decrypt ChaCha20 dari database
+                                    file_json = decrypt_from_database(encrypted_content, encrypted_hmac)
+                                    file_data_decrypted = json.loads(file_json)
+                                    # Layer 2: Decrypt AES-GCM
+                                    return decrypt_file_aes_gcm(file_data_decrypted['encrypted_content'], key)
+                                
+                                decrypted_file = get_cached_decrypt(
+                                    msg['id'],
+                                    msg['encrypted_content'],
+                                    msg.get('encrypted_hmac', ''),
+                                    decrypt_key,
+                                    decrypt_file_double
                                 )
                                 
                                 st.download_button(

@@ -5,19 +5,32 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Load credentials from Streamlit Secrets or .env
-try:
-    import streamlit as st
-    # Try to access secrets (only works on Streamlit Cloud)
-    SUPABASE_URL = st.secrets['SUPABASE_URL']
-    SUPABASE_KEY = st.secrets['SUPABASE_KEY']
-    DATABASE_MASTER_KEY = st.secrets['DATABASE_MASTER_KEY']
-    HMAC_SECRET_KEY = st.secrets['HMAC_SECRET_KEY']
-except (FileNotFoundError, KeyError, ImportError):
-    # Running locally - use .env file
-    SUPABASE_URL = os.getenv('SUPABASE_URL')
-    SUPABASE_KEY = os.getenv('SUPABASE_KEY')
-    DATABASE_MASTER_KEY = os.getenv('DATABASE_MASTER_KEY')
-    HMAC_SECRET_KEY = os.getenv('HMAC_SECRET_KEY')
+# Note: Don't import streamlit here to avoid set_page_config conflict
+def _load_secrets():
+    try:
+        import streamlit as st
+        # Try to access secrets (only works on Streamlit Cloud)
+        return {
+            'SUPABASE_URL': st.secrets['SUPABASE_URL'],
+            'SUPABASE_KEY': st.secrets['SUPABASE_KEY'],
+            'DATABASE_MASTER_KEY': st.secrets['DATABASE_MASTER_KEY'],
+            'HMAC_SECRET_KEY': st.secrets['HMAC_SECRET_KEY']
+        }
+    except (FileNotFoundError, KeyError, ImportError, RuntimeError):
+        # Running locally or secrets not available - use .env file
+        return {
+            'SUPABASE_URL': os.getenv('SUPABASE_URL'),
+            'SUPABASE_KEY': os.getenv('SUPABASE_KEY'),
+            'DATABASE_MASTER_KEY': os.getenv('DATABASE_MASTER_KEY'),
+            'HMAC_SECRET_KEY': os.getenv('HMAC_SECRET_KEY')
+        }
+
+# Load credentials
+_secrets = _load_secrets()
+SUPABASE_URL = _secrets['SUPABASE_URL']
+SUPABASE_KEY = _secrets['SUPABASE_KEY']
+DATABASE_MASTER_KEY = _secrets['DATABASE_MASTER_KEY']
+HMAC_SECRET_KEY = _secrets['HMAC_SECRET_KEY']
 
 # Validation
 if not all([SUPABASE_URL, SUPABASE_KEY, DATABASE_MASTER_KEY, HMAC_SECRET_KEY]):

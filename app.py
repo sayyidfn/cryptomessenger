@@ -1,23 +1,13 @@
-"""
-CryptoMessenger - Aplikasi chat terenkripsi end-to-end.
-Entry point aplikasi dengan struktur modular.
-
-Struktur Proyek:
-- config/: Konfigurasi aplikasi
-- models/: Business logic & data models
-- services/: External services (database, crypto)
-- ui/: User interface components & pages
-- utils/: Helper functions
-
-Author: CryptoMessenger Team
-"""
-
 import streamlit as st
-from config.settings import PAGE_CONFIG, APP_TITLE
 from ui.styles import apply_global_styles
 
 # Page configuration
-st.set_page_config(**PAGE_CONFIG)
+st.set_page_config(
+    page_title="CryptoMessenger",
+    page_icon="💬",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 # Apply global styles
 apply_global_styles()
