@@ -20,11 +20,9 @@ _DATABASE_MASTER_KEY = Settings.DATABASE_MASTER_KEY
 # ============================================================================
 
 def _sha256_bytes(text: str) -> bytes:
-    """Generate SHA-256 hash dari string."""
     return hashlib.sha256(text.encode('utf-8')).digest()
 
 def _bytes_equal(a: bytes, b: bytes) -> bool:
-    """Compare dua byte array dengan constant-time."""
     return hmac.compare_digest(a, b)
 
 # ============================================================================
