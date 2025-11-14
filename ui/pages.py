@@ -74,8 +74,8 @@ class RegisterPage:
             
             # Register Form
             with st.form("register_form"):
-                email = st.text_input("📧 Email", placeholder="Enter your email")
                 username = st.text_input("👤 Username", placeholder="Choose a username")
+                email = st.text_input("📧 Email", placeholder="Enter your email")
                 password = st.text_input("🔒 Password", type="password", placeholder="Create a strong password")
                 confirm_password = st.text_input("🔒 Confirm Password", type="password", placeholder="Confirm your password")
                 
