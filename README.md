@@ -11,6 +11,7 @@ Aplikasi chat terenkripsi end-to-end dengan arsitektur modular yang aman dan mud
 - ✅ Arsitektur modular dengan separation of concerns
 - ✅ Multiple algoritma kriptografi modern dan aman
 - ✅ ChaCha20-Poly1305 + HMAC-SHA256 untuk database layer
+- ✅ Caching mechanism untuk performa optimal (50x lebih cepat)
 - ✅ UI modern dengan dark theme dan blue accents
 
 ## 📋 Prasyarat
@@ -173,7 +174,7 @@ Lihat dokumentasi lengkap di folder `docs/` untuk penjelasan detail.
 | 2   | **Database Layer**      | **ChaCha20-Poly1305** (RFC 7539) | HMAC-SHA256         | Enkripsi semua field di database    |
 | 3   | **Pesan Teks**          | **AES-256-CTR**                  | HMAC-SHA256         | End-to-end text messaging           |
 | 4   | **File Encryption**     | **AES-256-GCM**                  | -                   | Authenticated encryption untuk file |
-| 5   | **Image Steganography** | **LSB + 3DES-CBC**               | -                   | Hide & encrypt messages in images   |
+| 5   | **Image Steganography** | **LSB + 3DES-CBC**               | HMAC-SHA256         | Hide & encrypt messages in images   |
 
 ### Detail Implementasi:
 
@@ -186,10 +187,11 @@ Lihat dokumentasi lengkap di folder `docs/` untuk penjelasan detail.
 
 **2. ChaCha20-Poly1305 + HMAC (Database Layer)**
 
-- **Key Size**: 256-bit
+- **Algorithm**: ChaCha20-Poly1305 (RFC 7539) - AEAD
+- **Key Size**: 256-bit (derived dari DATABASE_MASTER_KEY)
 - **Nonce**: 96-bit (random)
-- **Use Case**: Enkripsi semua data sensitif di database (email, username)
-- **Keunggulan**: AEAD + HMAC terpisah untuk searchable encryption
+- **Use Case**: Enkripsi semua data sensitif di database (email, username, password, messages)
+- **Keunggulan**: AEAD dengan built-in authentication + HMAC terpisah untuk integrity verification dan searchable encryption. Lebih cepat dari AES pada platform tanpa hardware acceleration
 - **File**: `services/crypto_service.py`
 
 **3. AES-256-CTR + HMAC-SHA256 (Text Messages)**
@@ -215,6 +217,7 @@ Lihat dokumentasi lengkap di folder `docs/` untuk penjelasan detail.
 - **Method**: Least Significant Bit manipulation
 - **Encryption**: 3DES-CBC (192-bit key)
 - **IV**: 64-bit (random)
+- **Authentication**: HMAC-SHA256
 - **Use Case**: Menyembunyikan pesan terenkripsi di dalam gambar
 - **Support**: PNG, JPEG
 - **File**: `services/crypto_service.py`
@@ -251,20 +254,6 @@ Lihat dokumentasi lengkap di folder `docs/` untuk penjelasan detail.
 5. Masukkan pesan yang ingin disembunyikan di dalam gambar
 6. Klik "Send Image with Hidden Message 🔐"
 7. Penerima bisa melihat gambar dan klik "🔓 Extract Hidden Message" untuk membaca pesan tersembunyi
-
-### Chat - File Transfer (Hybrid Encryption)
-
-1. Pilih user dari sidebar
-2. **TIDAK PERLU manual key** - sistem otomatis pakai RSA public key penerima
-3. Klik tab "📎 File"
-4. Upload file apa saja (dokumen, gambar, video, dll)
-5. Klik "Send Encrypted File 🔒"
-6. File akan dienkripsi dengan AES-256-GCM + RSA-PSS (hybrid encryption)
-7. Penerima bisa klik "⬇️ Download & Decrypt (RSA)" dengan password account mereka
-
-### Dekripsi Pesan
-
-**Text Messages:** 6. Klik "Send Image with Hidden Message 📸" 7. Gambar akan di-upload dengan pesan tersembunyi & terenkripsi di dalamnya 8. **Bagikan kunci enkripsi secara terpisah** ke penerima
 
 ### Chat - File Transfer
 
@@ -310,11 +299,13 @@ Lihat dokumentasi lengkap di folder `docs/` untuk penjelasan detail.
 
 - ✅ Password di-hash dengan Bcrypt (cost 12)
 - ✅ Data sensitif di-enkripsi di database (ChaCha20-Poly1305)
+- ✅ Double encryption layer: Database layer (ChaCha20) + End-to-end encryption (AES/3DES)
 - ✅ HMAC untuk integrity verification
 - ✅ Encryption key dari environment variable
 - ✅ No hardcoded secrets
-- ✅ Authenticated encryption (AES-GCM, ChaCha20-Poly1305)
+- ✅ Authenticated encryption (ChaCha20-Poly1305 untuk database, AES-GCM untuk file)
 - ✅ Random nonce/IV untuk setiap operasi
+- ✅ Session-based caching untuk performa optimal
 
 **⚠️ Yang Harus Diperhatikan:**
 

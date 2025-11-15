@@ -2,12 +2,10 @@ import base64
 import os
 import hmac
 import hashlib
-from typing import Dict, Tuple, Optional
+from typing import Dict, Optional
 from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305, AESGCM
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from cryptography.hazmat.primitives import serialization, hashes
 import bcrypt
 from config.settings import Settings
 
@@ -131,7 +129,7 @@ def decrypt_field(encrypted_b64: str, hmac_value: str) -> str:
     return plaintext.decode('utf-8')
 
 # ============================================================================
-# AES-256-GCM (DATABASE LAYER - ALTERNATIVE)
+# CHACHA20-POLY1305 (DATABASE LAYER)
 # ============================================================================
 
 def encrypt_for_database(data: str) -> Dict[str, str]:
@@ -140,13 +138,13 @@ def encrypt_for_database(data: str) -> Dict[str, str]:
 
     # Generate 256-bit key
     key = _sha256_bytes(_DATABASE_MASTER_KEY)
-    aesgcm = AESGCM(key)
+    chacha = ChaCha20Poly1305(key)
 
-    # Generate random nonce (12 bytes untuk GCM)
+    # Generate random nonce (12 bytes untuk ChaCha20-Poly1305)
     nonce = os.urandom(12)
 
     # Encrypt
-    ciphertext = aesgcm.encrypt(
+    ciphertext = chacha.encrypt(
         nonce,
         data.encode('utf-8'),
         None
@@ -173,7 +171,7 @@ def decrypt_from_database(encrypted_b64: str, hmac_value: str) -> str:
         raise Exception('Verifikasi HMAC gagal - data mungkin telah diubah')
     # Generate key
     key = _sha256_bytes(_DATABASE_MASTER_KEY)
-    aesgcm = AESGCM(key)
+    chacha = ChaCha20Poly1305(key)
 
     # Decode
     combined = base64.b64decode(encrypted_b64)
@@ -186,7 +184,7 @@ def decrypt_from_database(encrypted_b64: str, hmac_value: str) -> str:
     ciphertext = combined[12:]
 
     # Decrypt
-    plaintext = aesgcm.decrypt(nonce, ciphertext, None)
+    plaintext = chacha.decrypt(nonce, ciphertext, None)
 
     return plaintext.decode('utf-8')
 
@@ -271,7 +269,7 @@ def decrypt_text_aes_ctr_hmac(encrypted_text: str, user_key: str) -> str:
     return plaintext.decode('utf-8')
 
 # ============================================================================
-# 3DES ENCRYPTION (FOR STEGANOGRAPHY)
+# 3DES ENCRYPTION (STEGANOGRAPHY)
 # ============================================================================
 
 def encrypt_3des(plaintext: str, encryption_key: str) -> str:
@@ -341,16 +339,6 @@ def decrypt_3des(encrypted_data: str, encryption_key: str) -> str:
     
     return plaintext.decode('utf-8')
 
-
-# ============================================================================
-# HELPER FUNCTIONS
-# ============================================================================
-
-def generate_random_bytes(length: int) -> bytes:
-    return os.urandom(length)
-
-def generate_random_key(length: int) -> str:
-    return base64.b64encode(generate_random_bytes(length)).decode('utf-8')
 
 # ============================================================================
 # TESTING/DEBUG FUNCTIONS
@@ -500,134 +488,7 @@ def extract_message_from_image(image_bytes: bytes, encryption_key: str) -> str:
 
 
 # ============================================================================
-# RSA KEYPAIR MANAGEMENT
-# ============================================================================
-
-def generate_rsa_keypair(password: str) -> Tuple[str, str]:
-    # Generate RSA keypair 2048-bit
-    private_key = rsa.generate_private_key(
-        public_exponent=65537,
-        key_size=2048,
-        backend=default_backend()
-    )
-    
-    # Derive encryption key dari password untuk private key
-    key = _sha256_bytes(password)
-    
-    # Serialize public key (tidak perlu enkripsi)
-    public_key_pem = private_key.public_key().public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo
-    ).decode('utf-8')
-    
-    # Serialize dan enkripsi private key dengan password
-    private_key_pem = private_key.private_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PrivateFormat.PKCS8,
-        encryption_algorithm=serialization.BestAvailableEncryption(key)
-    ).decode('utf-8')
-    
-    return public_key_pem, private_key_pem
-
-
-def load_private_key(encrypted_private_key_pem: str, password: str):
-    key = _sha256_bytes(password)
-    
-    private_key = serialization.load_pem_private_key(
-        encrypted_private_key_pem.encode('utf-8'),
-        password=key,
-        backend=default_backend()
-    )
-    
-    return private_key
-
-
-def load_public_key(public_key_pem: str):
-    public_key = serialization.load_pem_public_key(
-        public_key_pem.encode('utf-8'),
-        backend=default_backend()
-    )
-    
-    return public_key
-
-
-# ============================================================================
-# FILE ENCRYPTION/DECRYPTION - HYBRID RSA-PSS + AES-GCM
-# ============================================================================
-
-def encrypt_file_hybrid(file_bytes: bytes, recipient_public_key_pem: str) -> Dict[str, str]:
-    # 1. Generate random AES-256 key (32 bytes)
-    aes_key = os.urandom(32)
-    
-    # 2. Generate random nonce untuk AES-GCM (12 bytes recommended)
-    nonce = os.urandom(12)
-    
-    # 3. Encrypt file dengan AES-256-GCM
-    aesgcm = AESGCM(aes_key)
-    ciphertext = aesgcm.encrypt(nonce, file_bytes, None)
-    
-    # GCM menghasilkan ciphertext + 16-byte authentication tag
-    # Tag sudah included di ciphertext, kita perlu extract untuk compatibility
-    tag = ciphertext[-16:]
-    ciphertext_only = ciphertext[:-16]
-    
-    # 4. Encrypt AES key dengan RSA-OAEP (untuk confidentiality)
-    recipient_public_key = load_public_key(recipient_public_key_pem)
-    encrypted_aes_key = recipient_public_key.encrypt(
-        aes_key,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-    
-    # 5. Return envelope
-    return {
-        'encrypted_key': base64.b64encode(encrypted_aes_key).decode('utf-8'),
-        'nonce': base64.b64encode(nonce).decode('utf-8'),
-        'ciphertext': base64.b64encode(ciphertext_only).decode('utf-8'),
-        'tag': base64.b64encode(tag).decode('utf-8')
-    }
-
-
-def decrypt_file_hybrid(
-    envelope: Dict[str, str],
-    encrypted_private_key_pem: str,
-    password: str
-) -> bytes:
-    # 1. Load private key
-    private_key = load_private_key(encrypted_private_key_pem, password)
-    
-    # 2. Decrypt AES key dengan RSA-OAEP
-    encrypted_aes_key = base64.b64decode(envelope['encrypted_key'])
-    aes_key = private_key.decrypt(
-        encrypted_aes_key,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-    
-    # 3. Parse envelope
-    nonce = base64.b64decode(envelope['nonce'])
-    ciphertext_only = base64.b64decode(envelope['ciphertext'])
-    tag = base64.b64decode(envelope['tag'])
-    
-    # 4. Reconstruct full ciphertext (ciphertext + tag)
-    full_ciphertext = ciphertext_only + tag
-    
-    # 5. Decrypt file dengan AES-256-GCM
-    aesgcm = AESGCM(aes_key)
-    plaintext = aesgcm.decrypt(nonce, full_ciphertext, None)
-    
-    
-    return plaintext
-
-
-# ============================================================================
-# FILE ENCRYPTION (AES-256-GCM with User Key) - Tanpa RSA
+# FILE ENCRYPTION (AES-256-GCM with User Key)
 # ============================================================================
 
 def encrypt_file_aes_gcm(file_bytes: bytes, encryption_key: str) -> str:

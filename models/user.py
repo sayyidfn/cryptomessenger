@@ -98,8 +98,6 @@ class User:
                 'id': user_row['id'],
                 'email': decrypted_email,
                 'username': decrypted_username,
-                'rsa_public_key': user_row.get('rsa_public_key', ''),
-                'encrypted_rsa_private_key': user_row.get('encrypted_rsa_private_key', ''),
                 'created_at': user_row['created_at']
             }
             
