@@ -310,7 +310,7 @@ class ChatArea:
                                         decrypt_key,
                                         lambda enc, hmac, key: Message.extract_from_image(enc, hmac, key)
                                     )
-                                    st.success(f"✅ Pesan tersembunyi: **{hidden_message}**")
+                                    st.success(f"✅ Pesan tersembunyi: {hidden_message}")
                                 except Exception as e:
                                     st.error(f"❌ Kunci enkripsi salah atau ekstraksi gagal: {str(e)}")
                             else:
