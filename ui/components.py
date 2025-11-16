@@ -352,14 +352,23 @@ class ChatArea:
                         if st.button(f"Ekstrak Pesan", key=f"extract_btn_{msg['id']}"):
                             if decrypt_key and decrypt_key.strip():
                                 try:
+                                    # Use proper function reference for extraction
                                     hidden_message = get_cached_decrypt(
                                         msg['id'],
                                         msg['encrypted_content'],
                                         msg.get('encrypted_hmac', ''),
                                         decrypt_key,
-                                        lambda enc, hmac, key: Message.extract_from_image(enc, hmac, key)
+                                        Message.extract_from_image
                                     )
-                                    st.success(f"✅ Pesan tersembunyi: {hidden_message}")
+                                    # Display extracted message in text_area for long messages
+                                    st.success("✅ Pesan tersembunyi berhasil diekstrak!")
+                                    st.text_area(
+                                        "🔓 Pesan Tersembunyi:",
+                                        value=hidden_message,
+                                        height=200,
+                                        disabled=True,
+                                        key=f"extracted_msg_{msg['id']}"
+                                    )
                                 except Exception as e:
                                     st.error(f"❌ Kunci enkripsi salah atau ekstraksi gagal: {str(e)}")
                             else:
