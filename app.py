@@ -21,6 +21,9 @@ if 'selected_user' not in st.session_state:
     st.session_state.selected_user = None
 if 'encryption_key' not in st.session_state:
     st.session_state.encryption_key = ''
+# Initialize decrypted cache (CRITICAL - must be before any imports of ui.components)
+if 'decrypted_cache' not in st.session_state:
+    st.session_state.decrypted_cache = {}
 
 def main():
     """Main application entry point."""
