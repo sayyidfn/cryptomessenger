@@ -564,21 +564,47 @@ class MessageInput:
                 elif not secret_message or not secret_message.strip():
                     st.error("❌ Harap masukkan pesan rahasia!")
                 else:
-                    with st.spinner("Menyembunyikan pesan dan mengirim..."):
-                        st.session_state.encryption_key = encryption_key
-                        success, result = Message.send_image_steganography(
-                            st.session_state.user['id'],
-                            st.session_state.selected_user['id'],
-                            uploaded_image.getvalue(),
-                            secret_message,
-                            encryption_key
-                        )
+                    # Validate image capacity before processing
+                    try:
+                        from PIL import Image
+                        import io
                         
-                        if success:
-                            st.success(f"✅ {result}")
-                            st.rerun()
+                        # Check image dimensions
+                        image = Image.open(io.BytesIO(uploaded_image.getvalue()))
+                        if image.mode != 'RGB':
+                            image = image.convert('RGB')
+                        
+                        pixels = image.width * image.height
+                        image_capacity_kb = (pixels * 3) / 8 / 1024
+                        
+                        # Estimate encrypted message size (3DES adds overhead ~1.5x + delimiter)
+                        estimated_message_size_kb = (len(secret_message) * 1.7) / 1024
+                        
+                        if estimated_message_size_kb > image_capacity_kb:
+                            st.error(
+                                f"❌ Gambar terlalu kecil untuk pesan ini!\n\n"
+                                f"📊 **Kapasitas gambar:** {image_capacity_kb:.2f} KB ({image.width}×{image.height} px)\n\n"
+                                f"📝 **Ukuran pesan (estimasi):** {estimated_message_size_kb:.2f} KB\n\n"
+                                f"💡 **Solusi:** Gunakan gambar lebih besar (minimal {int((estimated_message_size_kb * 1024 * 8 / 3) ** 0.5)}×{int((estimated_message_size_kb * 1024 * 8 / 3) ** 0.5)} px) atau kurangi panjang pesan."
+                            )
                         else:
-                            st.error(f"❌ {result}")
+                            with st.spinner("Menyembunyikan pesan dan mengirim..."):
+                                st.session_state.encryption_key = encryption_key
+                                success, result = Message.send_image_steganography(
+                                    st.session_state.user['id'],
+                                    st.session_state.selected_user['id'],
+                                    uploaded_image.getvalue(),
+                                    secret_message,
+                                    encryption_key
+                                )
+                                
+                                if success:
+                                    st.success(f"✅ {result}")
+                                    st.rerun()
+                                else:
+                                    st.error(f"❌ {result}")
+                    except Exception as e:
+                        st.error(f"❌ Error: {str(e)}")
     
     def _render_file_tab(self):
         with st.form("file_form", clear_on_submit=True):

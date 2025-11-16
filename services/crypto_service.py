@@ -407,9 +407,20 @@ def hide_message_in_image(image_bytes: bytes, message: str, encryption_key: str)
     
     pixels = list(image.getdata())
     
+    # Calculate capacities
+    image_capacity_bits = len(pixels) * 3
+    message_size_bits = len(binary_message)
+    image_capacity_kb = image_capacity_bits / 8 / 1024
+    message_size_kb = message_size_bits / 8 / 1024
+    
     # Cek apakah gambar cukup besar untuk menyimpan pesan
-    if len(binary_message) > len(pixels) * 3:
-        raise ValueError("Gambar terlalu kecil untuk menyembunyikan pesan")
+    if message_size_bits > image_capacity_bits:
+        raise ValueError(
+            f"Gambar terlalu kecil untuk menyembunyikan pesan!\n"
+            f"Kapasitas gambar: {image_capacity_kb:.2f} KB ({image.width}×{image.height} px)\n"
+            f"Ukuran pesan terenkripsi: {message_size_kb:.2f} KB\n"
+            f"Gunakan gambar lebih besar (minimal {int(message_size_kb * 1024 * 8 / 3 ** 0.5)}×{int(message_size_kb * 1024 * 8 / 3 ** 0.5)} px)"
+        )
     
     # Hide message in LSB
     new_pixels = []
