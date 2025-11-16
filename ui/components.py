@@ -569,15 +569,56 @@ class MessageInput:
                         from PIL import Image
                         import io
                         
+                        # Check message length limit (prevent server crash)
+                        message_length = len(secret_message)
+                        max_message_length = 50000  # 50KB limit for stability
+                        
+                        if message_length > max_message_length:
+                            st.error(
+                                f"❌ Pesan terlalu panjang untuk steganografi!\n\n"
+                                f"📝 **Panjang pesan:** {message_length:,} karakter\n\n"
+                                f"⚠️ **Batas maksimal:** {max_message_length:,} karakter (~500 baris)\n\n"
+                                f"💡 **Solusi:**\n"
+                                f"- Pecah menjadi beberapa pesan lebih kecil\n"
+                                f"- Atau gunakan tab **📎 File** untuk mengirim dokumen besar (lebih efisien)"
+                            )
+                            st.stop()
+                        
+                        # Check image file size limit
+                        image_file_size_mb = uploaded_image.size / 1024 / 1024
+                        if image_file_size_mb > 10:
+                            st.error(
+                                f"❌ File gambar terlalu besar!\n\n"
+                                f"📊 **Ukuran file:** {image_file_size_mb:.2f} MB\n\n"
+                                f"⚠️ **Batas maksimal:** 10 MB\n\n"
+                                f"💡 **Solusi:** Kompres gambar terlebih dahulu atau gunakan gambar dengan resolusi lebih kecil."
+                            )
+                            st.stop()
+                        
                         # Check image dimensions
                         image = Image.open(io.BytesIO(uploaded_image.getvalue()))
                         if image.mode != 'RGB':
                             image = image.convert('RGB')
                         
+                        # Limit image dimensions to prevent memory issues
+                        max_dimension = 3000
+                        if image.width > max_dimension or image.height > max_dimension:
+                            st.warning(
+                                f"⚠️ Gambar terlalu besar ({image.width}×{image.height} px), akan diresize ke maksimal {max_dimension}×{max_dimension} px untuk stabilitas server."
+                            )
+                            # Resize image while maintaining aspect ratio
+                            image.thumbnail((max_dimension, max_dimension), Image.Resampling.LANCZOS)
+                            # Convert back to bytes
+                            output = io.BytesIO()
+                            image.save(output, format='PNG')
+                            uploaded_image_bytes = output.getvalue()
+                        else:
+                            uploaded_image_bytes = uploaded_image.getvalue()
+                        
                         pixels = image.width * image.height
                         image_capacity_kb = (pixels * 3) / 8 / 1024
                         
-                        # Estimate encrypted message size (3DES adds overhead ~1.5x + delimiter)
+                        # Estimate encrypted message size (3DES adds overhead ~1.7x + delimiter)
                         estimated_message_size_kb = (len(secret_message) * 1.7) / 1024
                         
                         if estimated_message_size_kb > image_capacity_kb:
@@ -588,12 +629,20 @@ class MessageInput:
                                 f"💡 **Solusi:** Gunakan gambar lebih besar (minimal {int((estimated_message_size_kb * 1024 * 8 / 3) ** 0.5)}×{int((estimated_message_size_kb * 1024 * 8 / 3) ** 0.5)} px) atau kurangi panjang pesan."
                             )
                         else:
-                            with st.spinner("Menyembunyikan pesan dan mengirim..."):
+                            with st.spinner("Menyembunyikan pesan dan mengirim... (proses dapat memakan waktu 5-30 detik)"):
                                 st.session_state.encryption_key = encryption_key
+                                
+                                # Show progress info for long messages
+                                if message_length > 10000:
+                                    st.info(
+                                        f"📊 Memproses pesan panjang ({message_length:,} karakter)...\n\n"
+                                        f"Mohon tunggu, proses enkripsi dan steganografi sedang berlangsung."
+                                    )
+                                
                                 success, result = Message.send_image_steganography(
                                     st.session_state.user['id'],
                                     st.session_state.selected_user['id'],
-                                    uploaded_image.getvalue(),
+                                    uploaded_image_bytes,
                                     secret_message,
                                     encryption_key
                                 )
