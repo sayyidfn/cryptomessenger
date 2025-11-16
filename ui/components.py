@@ -163,25 +163,66 @@ class ChatArea:
             except Exception as e:
                 decrypted_text = f"🔒 [Error: {str(e)}]"
             
-            st.markdown(
-                f"""
-                <div style='display: flex; justify-content: flex-end; margin-bottom: 12px;'>
-                    <div style='
-                        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-                        color: white;
-                        padding: 12px 16px;
-                        border-radius: 16px;
-                        border-bottom-right-radius: 4px;
-                        max-width: 70%;
-                        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-                    '>
-                        <div style='font-size: 14px; line-height: 1.5; margin-bottom: 4px;'>{decrypted_text}</div>
-                        <div style='font-size: 11px; opacity: 0.8; text-align: right;'>{time_str}</div>
+            # Check if message is long (more than 5 lines or 300 characters)
+            lines = decrypted_text.split('\n')
+            line_count = len(lines)
+            is_long_message = line_count > 5 or len(decrypted_text) > 300
+            
+            if is_long_message:
+                # For long messages: show preview bubble + expander
+                st.markdown(
+                    f"""
+                    <div style='display: flex; justify-content: flex-end; margin-bottom: 12px;'>
+                        <div style='
+                            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                            color: white;
+                            padding: 12px 16px;
+                            border-radius: 16px;
+                            border-bottom-right-radius: 4px;
+                            max-width: 70%;
+                            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+                        '>
+                            <div style='font-size: 14px; line-height: 1.5; margin-bottom: 4px;'>📝 Pesan panjang ({line_count} baris)</div>
+                            <div style='font-size: 11px; opacity: 0.8; text-align: right;'>{time_str}</div>
+                        </div>
                     </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+                    """,
+                    unsafe_allow_html=True
+                )
+                
+                # Show full message in expander
+                with st.expander("📖 Lihat Pesan Lengkap", expanded=False):
+                    st.text_area(
+                        "Pesan:",
+                        value=decrypted_text,
+                        height=300,
+                        disabled=True,
+                        key=f"full_msg_{msg['id']}"
+                    )
+            else:
+                # For short messages: show directly in bubble
+                # Escape HTML special characters
+                safe_text = decrypted_text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('\n', '<br>')
+                
+                st.markdown(
+                    f"""
+                    <div style='display: flex; justify-content: flex-end; margin-bottom: 12px;'>
+                        <div style='
+                            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                            color: white;
+                            padding: 12px 16px;
+                            border-radius: 16px;
+                            border-bottom-right-radius: 4px;
+                            max-width: 70%;
+                            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+                        '>
+                            <div style='font-size: 14px; line-height: 1.5; margin-bottom: 4px; white-space: pre-wrap; word-wrap: break-word;'>{safe_text}</div>
+                            <div style='font-size: 11px; opacity: 0.8; text-align: right;'>{time_str}</div>
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
         else:
             # Penerima: tampilkan form decrypt
             st.markdown(
@@ -224,7 +265,15 @@ class ChatArea:
                                 decrypt_key,
                                 Message.decrypt_text
                             )
-                            st.success(f"✅ Pesan: **{decrypted_text}**")
+                            # Display decrypted message in text_area with max height for long messages
+                            st.success("✅ Pesan berhasil didekripsi!")
+                            st.text_area(
+                                "📝 Pesan Terdekripsi:",
+                                value=decrypted_text,
+                                height=200,
+                                disabled=True,
+                                key=f"decrypted_display_{msg['id']}"
+                            )
                         except Exception as e:
                             st.error(f"❌ Kunci enkripsi salah: {str(e)}")
                     else:

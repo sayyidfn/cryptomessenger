@@ -5,6 +5,9 @@ import json
 from models.user import User
 from models.message import Message
 
+# Initialize decrypted cache globally
+if 'decrypted_cache' not in st.session_state:
+    st.session_state.decrypted_cache = {}
 
 class LoginPage:
     def render(self):
