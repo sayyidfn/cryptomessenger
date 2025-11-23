@@ -246,6 +246,18 @@ class ChatArea:
                 unsafe_allow_html=True
             )
             
+            
+            # Tombol lihat pesan terenkripsi
+            with st.expander("👁️ Lihat Pesan Terenkripsi", expanded=False):
+                st.info("🔐 Pesan ini dalam bentuk terenkripsi. Gunakan kunci enkripsi untuk membacanya.")
+                st.text_area(
+                    "📋 Pesan Terenkripsi:",
+                    value=msg['encrypted_content'][:500] + "..." if len(msg['encrypted_content']) > 500 else msg['encrypted_content'],
+                    height=150,
+                    disabled=True,
+                    key=f"encrypted_display_{msg['id']}"
+                )
+            
             # Form untuk decrypt text message
             with st.expander("🔓 Dekripsi Pesan", expanded=False):
                 decrypt_key = st.text_input(
@@ -435,7 +447,7 @@ class ChatArea:
                     st.download_button(
                         label="📥 Download file terenkripsi",
                         data=file_data['encrypted_content'],
-                        file_name=f"{filename}.encrypted", 
+                        file_name=filename, 
                         mime="application/octet-stream",
                         key=f"download_encrypted_{msg['id']}"
                     )
