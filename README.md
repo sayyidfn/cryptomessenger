@@ -403,6 +403,10 @@ class NewComponent:
         # Streamlit UI
         pass
 ```
+## 👥 Team
+
+- Sayyid Fakhri Nurjundi (123230172)
+- Saif Ali Addamawi (123230169)
 
 ## 📄 Lisensi
 
